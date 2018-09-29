@@ -10,11 +10,10 @@ MCAST_GRP = '224.0.0.1'
 MCAST_PORT = 2048
 
 msg_list = ["SOCORRO", "BATATA", "PAO", "DOGGO"]
-msg_id = 0
 
 class Receiver(threading.Thread):
 
-	def __init__(self, pid, n):
+	def __init__(self, pid, time):
 		
 		threading.Thread.__init__(self)
 
@@ -23,14 +22,9 @@ class Receiver(threading.Thread):
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, ttl)
 		sock.bind((MCAST_GRP, MCAST_PORT))
 		self.sock = sock
-
-		self.num_ack = n
-		self.message_list = []
-	
+	#	self.message_list = []
 		self.pid = pid
-		self.time = random.randint(1, 10)
-
-
+		self.time = time
 
 	def run(self):
 		
@@ -38,28 +32,22 @@ class Receiver(threading.Thread):
 			try: 
 				data, addr = self.sock.recvfrom(1024)
 				message = pickle.loads(data)
+				self.time += 1
 			except:
 				print("Waiting for new message...")
 			else:
-				self.time = self.time + 1
-				if (message.data != "ACK"):
-			#		print("Receive message from %s! Sending ACK!" % addr)
-					self.message_list.append(message)
-					self.message_list.sort(key = lambda message: message.mid)
-					for x in range(len(self.message_list)):
-						print(self.message_list[x].data, self.message_list[x].mid, self.message_list[x].time)
-				
+				if (message.isAck == False):
+				#	self.message_list.append(message)
 					self.time = max(self.time, message.time) + 1
-					ack = Message(message.mid, self.time, "ACK")
-					print("Enviei ACK")
+					print("Send ACK to message {}".format(message.mid))
+					ack = Message(message.mid, self.time, None, True)
 					self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT))
-					self.time = self.time + 1
-
-			
+					self.time += 1
+					time.sleep(1)
 
 class Sender(threading.Thread):
 
-	def __init__(self, pid):
+	def __init__(self, pid, time):
 
 		threading.Thread.__init__(self)
 
@@ -68,50 +56,57 @@ class Sender(threading.Thread):
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, ttl)
 		sock.bind((MCAST_GRP, MCAST_PORT))
 		self.sock = sock
-		self.time = random.randint(1, 10)
+		self.time = time
 		self.pid = pid
-		
+		self.message_list = []
 
 	def run(self):
 		global msg_id 
 
 		while(True):
-			m = input("Digite sua mensagem: ");
-			msg_id += 1
-			message = Message(msg_id, self.time, m)
-		#	message = Message(msg_id, self.time, msg_list[random.randint(0, 3)])
-			print("Sending message with id %d" % msg_id)
+
+			message = Message(str(self.pid) + str(self.time), self.time, msg_list[random.randint(0, 3)], False)
+			self.message_list.append(message)
+			time.sleep(5)
 			sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT))
 			self.time += 1
-		
+
 			try:
-				data, server = self.sock.recvfrom(100)
+				data, server = self.sock.recvfrom(512)
+				ack_message = pickle.loads(data)
 			except socket.timeout:
 				print('Timed out, no more responses')
 				break
 			else:
-				ack_message = pickle.loads(data)
-				self.time = self.time + 1
-				print('Recebi ACK da mensagem %s' % ack_message.mid)
-				ack_message.ack += 1
-				print("ACK", ack_message.ack)
-			
+				for x in range(len(self.message_list)):
+					print('[%s]' % self.message_list[x].mid)
+				if (ack_message.isAck == True):
+					for x in range(len(self.message_list)):
+						if ((self.message_list[x].mid == ack_message.mid)):
+							self.message_list[x].ack += 1
+							if ((self.message_list[x].ack == 2) and (x == 0)):
+								self.message_list.pop(0)
+								print("Receive three ACKs! Removing message %s from queue!" % self.message_list[x].mid)
+								break 
 
 class Message:
 
-	def __init__(self, mid, time, data):
+	def __init__(self, mid, time, data, isAck):
 		self.mid = mid
 		self.time = time
 		self.data = data
+		self.isAck = isAck
 		self.ack = 0
 
 def main():
 
-	prc_id = random.randint(1, 2000)
-	n_process = sys.argv[1:]
+	pid = int(sys.argv[1])
+	time = random.randint(1, 10)
+	
+	receiver = Receiver(pid, time)
+	sender = Sender(pid, time)
 
-	receiver = Receiver(prc_id, n_process)
-	sender = Sender(prc_id)
+	print("I am process {} and my initial time is {}" .format(pid, time))
 
 	receiver.start()
 	sender.start()
