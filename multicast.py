@@ -87,7 +87,7 @@ class Sender(threading.Thread):
 					for x in range(len(message_list)):
 						if ((message_list[x].mid == ack_message.mid)):
 							message_list[x].ack += 1
-							if ((message_list[x].ack == self.pid) and (x == 0)):
+							if ((message_list[x].ack == 3) and (x == 0)):
 								print("Received {} ACK(s)! Removing message {} from queue!" .format(self.pid, message_list[x].mid))
 								message_list.pop(0)
 								break
