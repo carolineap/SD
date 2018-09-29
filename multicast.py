@@ -10,6 +10,7 @@ MCAST_GRP = '224.0.0.1'
 MCAST_PORT = 2048
 
 msg_list = ["SOCORRO", "BATATA", "PAO", "DOGGO"]
+message_list = []
 
 class Receiver(threading.Thread):
 
@@ -22,7 +23,6 @@ class Receiver(threading.Thread):
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, ttl)
 		sock.bind((MCAST_GRP, MCAST_PORT))
 		self.sock = sock
-	#	self.message_list = []
 		self.pid = pid
 		self.time = time
 
@@ -37,9 +37,12 @@ class Receiver(threading.Thread):
 				print("Waiting for new message...")
 			else:
 				if (message.isAck == False):
-				#	self.message_list.append(message)
+					print("Received message %s" % message.mid)
+					message_list.append(message)
+					print(message.mid[2:])
+					message_list.sort(key=lambda message: message.time)
 					self.time = max(self.time, message.time) + 1
-					print("Send ACK to message {}".format(message.mid))
+					print("Sending ACK to message {}".format(message.mid))
 					ack = Message(message.mid, self.time, None, True)
 					self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT))
 					self.time += 1
@@ -58,16 +61,16 @@ class Sender(threading.Thread):
 		self.sock = sock
 		self.time = time
 		self.pid = pid
-		self.message_list = []
+		message_list = []
 
 	def run(self):
 		global msg_id 
 
 		while(True):
 
-			message = Message(str(self.pid) + str(self.time), self.time, msg_list[random.randint(0, 3)], False)
-			self.message_list.append(message)
-			time.sleep(5)
+			message = Message(str(self.pid) + '/' + str(self.time), self.time, msg_list[random.randint(0, 3)], False)
+			time.sleep(4)
+			print("Sending message %s" % message.mid)
 			sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT))
 			self.time += 1
 
@@ -78,16 +81,18 @@ class Sender(threading.Thread):
 				print('Timed out, no more responses')
 				break
 			else:
-				for x in range(len(self.message_list)):
-					print('[%s]' % self.message_list[x].mid)
 				if (ack_message.isAck == True):
-					for x in range(len(self.message_list)):
-						if ((self.message_list[x].mid == ack_message.mid)):
-							self.message_list[x].ack += 1
-							if ((self.message_list[x].ack == 2) and (x == 0)):
-								self.message_list.pop(0)
-								print("Receive three ACKs! Removing message %s from queue!" % self.message_list[x].mid)
-								break 
+				#	self.time = max(self.time, ack_message.time) + 1
+					print("Received ACK from message %s" % ack_message.mid)
+					for x in range(len(message_list)):
+						if ((message_list[x].mid == ack_message.mid)):
+							message_list[x].ack += 1
+							if ((message_list[x].ack == self.pid) and (x == 0)):
+								print("Received {} ACK(s)! Removing message {} from queue!" .format(self.pid, message_list[x].mid))
+								message_list.pop(0)
+								break
+				for x in range(len(message_list)):
+						print('[%s]' % message_list[x].mid)
 
 class Message:
 
