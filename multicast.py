@@ -83,15 +83,14 @@ class Sender(threading.Thread):
 	def run(self):
 		global msg_id 
 		global myTime
+		# esperar 7s antes de enviar a mensagem, senão não da tempo de abrir os 3 processos
 		time.sleep(7)
 		while(True):
 			myTime += 1
 			message = Message(str(self.pid) + '/' + str(myTime), myTime, msg_list[random.randint(0, 3)], False)
-			time.sleep(3)
+			time.sleep(3) # esperar 3s antes de enviar a próxima mensagem
 			print("Sending message %s" % message.mid)
-			
 			sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT))
-			
 
 			#try:
 			#	data, server = self.sock.recvfrom(512)
@@ -116,7 +115,7 @@ def main():
 
 	receiver = Receiver(pid, time)
 	sender = Sender(pid, time)
-	myTime = pid + 1
+	myTime = pid + 1 # tempo do processo 
 	print("I am process {} and my initial time is {}" .format(pid, myTime))
 
 	receiver.start()
