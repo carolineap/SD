@@ -53,7 +53,6 @@ class Receiver(threading.Thread):
 					for x in range(len(message_list)):
 						print('[%s]' % message_list[x].mid)
 					#self.time = max(self.time, message.time) + 1
-		
 					myTime += 1
 					ack = Message(message.mid, myTime, None, True)
 					
