@@ -11,9 +11,10 @@ MCAST_PORT = 2048
 
 msg_list = ["SOCORRO", "BATATA", "PAO", "DOGGO"]
 message_list = []
-
+random.seed()
+myTime = 0
 class Receiver(threading.Thread):
-
+	global myTime
 	def __init__(self, pid, time):
 		
 		threading.Thread.__init__(self)
@@ -24,29 +25,45 @@ class Receiver(threading.Thread):
 		sock.bind((MCAST_GRP, MCAST_PORT))
 		self.sock = sock
 		self.pid = pid
-		self.time = time
+		#self.time = time
 
 	def run(self):
-		
+		global myTime
 		while(True):
 			try: 
 				data, addr = self.sock.recvfrom(1024)
 				message = pickle.loads(data)
-				self.time += 1
+				#self.time += 1
+				myTime = max(myTime, message.time) #+ 1
 			except:
 				print("Waiting for new message...")
 			else:
 				if (message.isAck == False):
 					print("Received message %s" % message.mid)
 					message_list.append(message)
-					print(message.mid[2:])
+					#print(message.mid[2:])
 					message_list.sort(key=lambda message: message.time)
-					self.time = max(self.time, message.time) + 1
-					print("Sending ACK to message {}".format(message.mid))
-					ack = Message(message.mid, self.time, None, True)
+					for x in range(len(message_list)):
+						print('[%s]' % message_list[x].mid)
+					#self.time = max(self.time, message.time) + 1
+					
+					myTime += 1
+					ack = Message(message.mid, myTime, None, True)
+					
+					print("Sending ACK {} to message {}".format(message.time, message.mid))
 					self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT))
-					self.time += 1
-					time.sleep(1)
+					
+					#time.sleep(1)
+				else:
+				#	self.time = max(self.time, ack_message.time) + 1
+					print("Received ACK from message %s" % message.mid)
+					for x in range(len(message_list)):
+						if ((message_list[x].mid == message.mid)):
+							message_list[x].ack += 1
+							if ((message_list[x].ack == 3) and (x == 0)):
+								print("Received {} ACK(s)! Removing message {} from queue!" .format(self.pid, message_list[x].mid))
+								message_list.pop(0)
+								break	
 
 class Sender(threading.Thread):
 
@@ -59,41 +76,31 @@ class Sender(threading.Thread):
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, ttl)
 		sock.bind((MCAST_GRP, MCAST_PORT))
 		self.sock = sock
-		self.time = time
+		#self.time = time
 		self.pid = pid
 		message_list = []
 
 	def run(self):
 		global msg_id 
-
+		global myTime
+		time.sleep(7)
 		while(True):
-
-			message = Message(str(self.pid) + '/' + str(self.time), self.time, msg_list[random.randint(0, 3)], False)
-			time.sleep(4)
+			myTime += 1
+			message = Message(str(self.pid) + '/' + str(myTime), myTime, msg_list[random.randint(0, 3)], False)
+			time.sleep(3)
 			print("Sending message %s" % message.mid)
+			
 			sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT))
-			self.time += 1
+			
 
-			try:
-				data, server = self.sock.recvfrom(512)
-				ack_message = pickle.loads(data)
-			except socket.timeout:
-				print('Timed out, no more responses')
-				break
-			else:
-				if (ack_message.isAck == True):
-				#	self.time = max(self.time, ack_message.time) + 1
-					print("Received ACK from message %s" % ack_message.mid)
-					for x in range(len(message_list)):
-						if ((message_list[x].mid == ack_message.mid)):
-							message_list[x].ack += 1
-							if ((message_list[x].ack == 3) and (x == 0)):
-								print("Received {} ACK(s)! Removing message {} from queue!" .format(self.pid, message_list[x].mid))
-								message_list.pop(0)
-								break
-				for x in range(len(message_list)):
-						print('[%s]' % message_list[x].mid)
-
+			#try:
+			#	data, server = self.sock.recvfrom(512)
+			#	ack_message = pickle.loads(data)
+			#except socket.timeout:
+			#	print('Timed out, no more responses')
+			#	break
+			#else:
+				
 class Message:
 
 	def __init__(self, mid, time, data, isAck):
@@ -104,14 +111,13 @@ class Message:
 		self.ack = 0
 
 def main():
-
+	global myTime
 	pid = int(sys.argv[1])
-	time = random.randint(1, 10)
-	
+
 	receiver = Receiver(pid, time)
 	sender = Sender(pid, time)
-
-	print("I am process {} and my initial time is {}" .format(pid, time))
+	myTime = pid + 1
+	print("I am process {} and my initial time is {}" .format(pid, myTime))
 
 	receiver.start()
 	sender.start()
