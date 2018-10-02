@@ -1,6 +1,5 @@
 import sys
 import socket
-import struct
 import threading
 import time
 import random
@@ -14,6 +13,7 @@ message_list = []
 random.seed()
 myTime = 0
 cont = 0
+
 class Receiver(threading.Thread):
 	global myTime
 	def __init__(self, pid):
@@ -26,7 +26,6 @@ class Receiver(threading.Thread):
 		sock.bind((MCAST_GRP, MCAST_PORT))
 		self.sock = sock
 		self.pid = pid
-		#self.time = time
 		
 	def run(self):
 		global myTime
@@ -35,9 +34,8 @@ class Receiver(threading.Thread):
 			try: 
 				data, addr = self.sock.recvfrom(1024)
 				message = pickle.loads(data)
-				#self.time += 1
-				myTime = max(myTime, message.time) #+ 1
-				#print("myTime é: " + str(myTime))
+				myTime = max(myTime, message.time) 
+				
 			except:
 				print("Waiting for new message...")
 			else:
@@ -49,20 +47,19 @@ class Receiver(threading.Thread):
 							ack_buffer.pop(i)
 
 					message_list.append(message)
-					#print(message.mid[2:])
 					message_list.sort(key=lambda message: message.time)
+
 					for x in range(len(message_list)):
 						print('[%s]' % message_list[x].mid)
-					#self.time = max(self.time, message.time) + 1
+
 					myTime += 1
 					ack = Message(message.mid, myTime, None, True)
 					
 					print("Sending ACK to message {}".format(message.mid))
 					self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT))
 
-					#time.sleep(1)
+				
 				else:
-				#	self.time = max(self.time, ack_message.time) + 1
 					print("Received ACK from message %s" % message.mid)
 					flag = False
 					for x in range(len(message_list)):
@@ -74,8 +71,6 @@ class Receiver(threading.Thread):
 						message_list.pop(0)
 				
 					if (flag == False):
-						print("AQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQUIIIIIIIIIIIIIIIIIIIIIIIIIII")
-					#	print(message_list[-1].mid)
 						ack_buffer.append(message)
 										
 
@@ -90,13 +85,12 @@ class Sender(threading.Thread):
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, ttl)
 		sock.bind((MCAST_GRP, MCAST_PORT))
 		self.sock = sock
-		#self.time = time
 		self.pid = pid
-		message_list = []
 
 	def run(self):
 		global cont
 		global myTime
+		
 		# esperar 7s antes de enviar a mensagem, senão não da tempo de abrir os 3 processos
 		time.sleep(7)
 		while(True):
@@ -108,14 +102,7 @@ class Sender(threading.Thread):
 				sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT))
 				cont += 1
 
-			time.sleep(random.randrange(0, 6)) # esperar 3s antes de enviar a próxima mensagem
-			#try:
-			#	data, server = self.sock.recvfrom(512)
-			#	ack_message = pickle.loads(data)
-			#except socket.timeout:
-			#	print('Timed out, no more responses')
-			#	break
-			#else:
+			time.sleep(random.randrange(0, 5)) # esperar tempo aleatório antes de enviar a próxima mensagem
 				
 class Message:
 
