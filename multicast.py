@@ -32,9 +32,10 @@ class Receiver(threading.Thread):
 		ack_buffer = []
 		while(True):
 			try: 
+				time.sleep(random.randint(0, 3))
 				data, addr = self.sock.recvfrom(1024)
 				message = pickle.loads(data)
-				myTime = max(myTime, message.time) 
+				myTime = max(myTime, message.time) + 1
 				
 			except:
 				print("Waiting for new message...")
@@ -47,17 +48,17 @@ class Receiver(threading.Thread):
 							ack_buffer.pop(i)
 
 					message_list.append(message)
-					message_list.sort(key=lambda message: message.time)
+					message_list.sort(key=lambda message: int(str(message.time) + message.mid[0]))
 
 					for x in range(len(message_list)):
 						print('[%s]' % message_list[x].mid)
 
-					myTime += 1
+					
 					ack = Message(message.mid, myTime, None, True)
 					
 					print("Sending ACK to message {}".format(message.mid))
 					self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT))
-
+					myTime += 1
 				
 				else:
 					print("Received ACK from message %s" % message.mid)
@@ -95,14 +96,13 @@ class Sender(threading.Thread):
 		time.sleep(7)
 		while(True):
 			
-			while(cont < 20): #envia apenas 20 mensagens
+			while(cont < 10): #envia apenas 20 mensagens
 				myTime += 1
 				message = Message(str(self.pid) + '/' + str(myTime), myTime, msg_list[random.randint(0, 3)], False)
 				print("Sending message " + message.data + " com o mid = " + str(message.mid))
 				sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT))
 				cont += 1
-
-			time.sleep(random.randrange(0, 5)) # esperar tempo aleatório antes de enviar a próxima mensagem
+				time.sleep(random.randrange(0, 2)) # esperar tempo aleatório antes de enviar a próxima mensagem
 				
 class Message:
 
