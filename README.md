@@ -1,3 +1,3 @@
 # SD
 
-Multicast ordenado utilizando sockets em Python.
+Trabalhos desenvolvidos na disciplina de Sistemas Distribuídos.
