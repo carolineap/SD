@@ -84,6 +84,7 @@ class Receiver(threading.Thread):
 							if (r.message.ack == 3):
 								r.isUsing = True
 								r.requested = False
+								myTime += 1
 
 class Sender(threading.Thread):
 
@@ -138,8 +139,6 @@ class CriticalRegion(threading.Thread):
 						self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT + int(m.mid[0])))
 						message_list.pop(message_list.index(m))
 						myTime += 1
-						break
-
 							
 class Message:
 
