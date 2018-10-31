@@ -1,5 +1,7 @@
+#Sistemas Distribuídos - Exclusão Mútua
 #Caroline Aparecida 726506
 #Isabela Sayuri Matsumoto 726539
+
 import sys
 import socket
 import threading
@@ -9,24 +11,29 @@ import pickle
 
 MCAST_GRP = '127.0.0.1'
 MCAST_PORT = 2048
-
 message_list = []
+#rlist = random.sample(range(6),5)
+rlist = [6, 5, 4]
+rlist.extend(random.sample(range(3),3))
+isUsing = []
+myResources = []
 random.seed()
 myTime = 0
-cont = 0
+
 
 class Receiver(threading.Thread):
 	global myTime
-	def __init__(self, pid, sock, rlist):
+	def __init__(self, pid, sock):
 		
 		threading.Thread.__init__(self)
 
 		self.sock = sock
 		self.pid = pid
-		self.rlist = rlist
 		
 	def run(self):
 		global myTime
+		global myResources
+		global isUsing
 		ack_buffer = []
 		while(True):
 			try: 
@@ -38,57 +45,69 @@ class Receiver(threading.Thread):
 			except:
 				print("Waiting for new message...")
 			else:
-			
-				if (message.isAck == False):
-
-					print("Received message %s" % message.mid)
+				
+				if (message.isAck == False and message.isNak == False): #se não é ACK nem NAK
 					
-					if (message.mid[0] != str(self.pid)):
+					print("Received message %s" % message.mid)
+
+					if (message.mid[0] != str(self.pid)): #se não é minha mensagem				
+
+						message_list.append(message)
+						message_list.sort(key=lambda message: int(str(message.time) + message.mid[0]))
+
+						if message.rid not in isUsing : #se eu não estou usando
 							
-						flag = True
-						for r in self.rlist:
-							if message.rid == r.rid and r.isUsing == True:
-								flag = False
-								break
-							elif message.rid == r.rid and r.requested == True:
-								if int(str(r.message.time) + r.message.mid[0]) < int(str(message.time) + message.mid[0]):
-									flag = False
-									break
+							flag = False
 
-						if (flag == True):
-							ack = Message(message.mid, myTime, None, True)
-							print("Sending ACK to process {} uses resource R{}".format(message.mid[0], message.rid))
-							self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT + int(message.mid[0])))	
-							myTime += 1
+							for i in myResources:  
+								if i.rid == message.rid: #se eu quero usar
+									flag = True
+									if int(str(message.time) + message.mid[0]) > int(str(i.time) + i.mid[0]):									
+										response = Message(message.mid, myTime, None, False, True)	
+										print("My time is smaller, sending NAK to message {}/R{}".format(message.mid,message.rid))
+									else :
+										response = Message(message.mid, myTime, None, True, False)
+										print("My time is bigger, sending ACK to message {}/R{}".format(message.mid, message.rid))
+										message_list.pop(message_list.index(message))
 
-						if (flag == False):
-							message_list.append(message)
-							message_list.sort(key=lambda message: int(str(message.time) + message.mid[0]))					
+							if flag == False: #não estou usando e não quero usar
+								response = Message(message.mid, myTime, None, True, False)
+								print("Sending ACK to message {}/R{}".format(message.mid, message.rid))
+								message_list.pop(message_list.index(message))
+
+						else :	# se eu estou usando
+							response = Message(message.mid, myTime, None, False, True)
+							print("I am using, sending NAK {}/R{}".format(message.mid, message.rid))
 						
+
 						for x in range(len(message_list)):
 							print('[{}][R{}]' .format(message_list[x].mid, message_list[x].rid)) 
+					else: #se é minha mensagem
+						myResources.append(message) 
+						response = Message(message.mid, myTime, None, True, False)
+						print("Sending ACK to my message {}/R{}".format(message.mid, message.rid))
+						
 
-					else:
-						ack = Message(message.mid, myTime, None, True)
-						print("Sending ACK to process {} uses resource R{}".format(message.mid[0], message.rid))
-						self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT + int(message.mid[0])))	
-						myTime += 1
+					self.sock.sendto(pickle.dumps(response), (MCAST_GRP, MCAST_PORT + int(message.mid[0])))	
+					myTime += 1
 
-				else:		
-					
-					print("Received ACK of message %s" % message.mid)
+				elif message.isAck == True and message.isNak == False: #Se é ACK		
+					#print("Received ACK from message {}" .format(message.mid))
+					flag = False
 
-					for r in self.rlist:
-						if (r.requested == True and r.message.mid == message.mid):
-							r.message.ack += 1
-							if (r.message.ack == 3):
-								r.isUsing = True
-								r.requested = False
-								myTime += 1
+					for x in range(len(myResources)):
+						if ((myResources[x].mid == message.mid)):
+							flag = True	
+							myResources[x].ack += 1
+							if (myResources[x].ack == 3):
+								print("Receive 3 ACKs to use R" + str(myResources[x].rid))
+								isUsing.append(myResources[x].rid)
+								myResources.pop(x)
+								break						
 
 class Sender(threading.Thread):
 
-	def __init__(self, pid, sock, rlist):
+	def __init__(self, pid, sock):
 
 		threading.Thread.__init__(self)
 		self.sock = sock
@@ -96,72 +115,56 @@ class Sender(threading.Thread):
 		self.rlist = rlist
 
 	def run(self):
-
-		global cont
 		global myTime
-
-		time.sleep(random.randint(3, 5))
+		# esperar 7s antes de enviar a mensagem, senão não da tempo de abrir os 3 processos
+		time.sleep(random.randint(4, 7))
 		cont = 0
 		while(True):
-			while(cont < 5): #enquanto ainda há recursos para serem utilizados
+			while(cont < 6): #enquanto ainda há recursos para serem utilizados
 				myTime += 1
-				message = Message(str(self.pid) + '/' + str(myTime), myTime, self.rlist[cont].rid, False)
+				message = Message(str(self.pid) + '/' + str(myTime), myTime, rlist[cont], False, False)
 				print("Asking for resource R" + str(message.rid) + " com o mid = " + str(message.mid))
-				self.rlist[cont].askResource(message)
 				for i in range(1, 4):
 					sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + i))
-				time.sleep(random.randrange(0, 3)) # esperar tempo aleatório antes de enviar a próxima mensagem
+				time.sleep(random.randrange(0, 1)) # esperar tempo aleatório antes de enviar a próxima mensagem
 				cont += 1
+
+
 
 class CriticalRegion(threading.Thread):
 
-	def __init__(self, sock, rlist):
+	def __init__(self, sock):
 
 		threading.Thread.__init__(self)
 		self.sock = sock
-		self.rlist = rlist
 
 	def run(self):
 		global isUsing
-		global myTime
-		
+		global message_list
 		while True:
-			for r in self.rlist:
-				if r.isUsing == True:
-					print("I am using R%s" % r.rid)
-					time.sleep(random.randint(2, 5))
-					print("Stop using R%s" % r.rid)
-					r.isUsing = False
+			while len(isUsing):
+				print("I am using R%d" % isUsing[0])
+				time.sleep(random.randint(1, 3))
+				r = isUsing.pop(0)
+				print("Stop using R%d" % r)
 				for m in message_list:
-					if (r.isUsing == False and m.rid == r.rid and r.requested == False):
-						ack = Message(m.mid, myTime, None, True)
-						print("Sending ACK to process {} uses resource R{}".format(m.mid[0], m.rid))
+					if (m.rid == r):
+						ack = Message(m.mid, myTime, None, True, False)
+						print("Sending ACK to message {}/R{}".format(m.mid, m.rid))
 						self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT + int(m.mid[0])))
+
+				for m in message_list:
+					if(m.rid == r):
 						message_list.pop(message_list.index(m))
-						myTime += 1
-							
 class Message:
 
-	def __init__(self, mid, time2, rid, isAck):
+	def __init__(self, mid, time2, rid, isAck, isNak):
 		self.mid = mid
 		self.time = time2
 		self.rid = rid
 		self.isAck = isAck
 		self.ack = 0
-
-
-class Resource:
-
-	def __init__(self, rid):
-		self.message = None
-		self.rid = rid
-		self.isUsing = False
-		self.requested = False
-
-	def askResource(self, message):
-		self.message = message
-		self.requested = True
-
+		self.isNak = isNak
 
 def main():
 	global myTime
@@ -173,20 +176,13 @@ def main():
 	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, ttl)
 	sock.bind((MCAST_GRP, MCAST_PORT + pid))
 
-	rlist = []
-	temp = random.sample(range(6), 5)
-	print(temp)
-
-	for r in temp:
-		rlist.append(Resource(r))
-
-	receiver = Receiver(pid, sock, rlist)
-	sender = Sender(pid, sock, rlist)
-	critical = CriticalRegion(sock, rlist)
+	receiver = Receiver(pid, sock)
+	sender = Sender(pid, sock)
+	critical = CriticalRegion(sock)
 
 	myTime = pid + 1 # tempo do processo 
 	print("I am process {} and my initial time is {}" .format(pid, myTime))
-
+	print(rlist)
 	receiver.start()
 	sender.start()
 	critical.start()
