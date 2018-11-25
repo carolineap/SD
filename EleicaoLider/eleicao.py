@@ -11,7 +11,7 @@ import pickle
 
 MCAST_GRP = '127.0.0.1'
 MCAST_PORT = 2048
-SOURCE_NID = 0 
+SOURCE_NID = 1 
 
 class Node:
 	def __init__(self, nid, adj, capacity):
@@ -58,15 +58,15 @@ class Receiver(threading.Thread):
 								sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + i))
 					else:
 						print("Receive a message from node " + str(message.source) + " but I already have a parent! Sendind ACK!")
-						message = Message(self.node.nid, message.source, 'ACK', self.node.maxCapacity)
+						message = Message(self.node.nid, message.source, 'ACK', None)
 						sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + message.source))
 				elif (message.type == 'ACK'):
 					print("Receive ACK from node " + str(message.source))
-					if (message.capLeader[0] > self.node.maxCapacity[0]):
+					if (message.capLeader != None and message.capLeader[0] > self.node.maxCapacity[0]):
 						self.node.maxCapacity = message.capLeader
 					self.node.ack += 1
 				elif (message.type == 'BROADCAST'):
-					print("Node " + str(message.capLeader[1]) + " with capacity " + str(message.capLeader[0]) + " has been elected the lider")
+					print("Node " + str(message.capLeader[1]) + " with capacity " + str(message.capLeader[0]) + " has been elected the leader!")
 
 
 
@@ -78,7 +78,6 @@ class Sender(threading.Thread):
 		self.sock = socket
 
 	def run(self):
-		
 		if (self.node.nid == SOURCE_NID):
 			input("Press Enter to continue...")
 			print("Starting election...")
@@ -86,18 +85,17 @@ class Sender(threading.Thread):
 				message = Message(self.node.nid, i, 'ELECTION', None)
 				sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + i))
 
-		flag = False
-
-		while not flag:
+		endElection = False
+		while not endElection:
 			if (self.node.nid == SOURCE_NID):
 				if (self.node.ack == len(self.node.adj)):
 					print("Sending broadcast message...")
 					for i in range(10):
 						message = Message(self.node.nid, message.source, 'BROADCAST', self.node.maxCapacity)
 						sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + i))
-					flag = True
+					endElection = True
 			elif (self.node.pred != None and self.node.ack == len(self.node.adj) - 1):
-				print("Sending ACK to my parent, the max capacity i found is " + str(self.node.maxCapacity[0]))
+				print("Sending ACK to my parent, the max capacity I found is " + str(self.node.maxCapacity[0]))
 				message = Message(self.node.nid, self.node.pred, 'ACK', self.node.maxCapacity)
 				sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + self.node.pred))
 				self.node.ack = 0
@@ -105,7 +103,7 @@ class Sender(threading.Thread):
 def main():
 
 	nid = int(sys.argv[1])
-	capacity = int(sys.argv[2])
+	#capacity = int(sys.argv[2])
 
 	ttl = 1
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -114,26 +112,62 @@ def main():
 
 	adj = []
 
+	#Topologia inventada
+	# if nid == 0:
+	# 	adj = [1, 2, 3]
+	# elif nid == 1:
+	# 	adj = [0, 2, 4]
+	# elif nid == 2:
+	# 	adj = [0, 1, 3, 4, 5, 6]
+	# elif nid == 3:
+	# 	adj = [0, 2, 6]
+	# elif nid == 4:
+	# 	adj = [1, 2, 5, 7]
+	# elif nid == 5:
+	# 	adj = [2, 4, 6, 7, 8, 9]
+	# elif nid == 6:
+	# 	adj = [2, 3, 5, 9]
+	# elif nid == 7:
+	# 	adj = [4, 5, 8]
+	# elif nid == 8:
+	# 	adj = [5, 7, 9]
+	# elif nid == 9:
+	# 	adj = [5, 6, 8]
+	# else:
+	# 	print("Invalid node number")
+	# 	return
+
+	#Topologia do slide:
 	if nid == 0:
-		adj = [1, 2, 3]
+		adj = [1, 9]
+		capacity = 4
 	elif nid == 1:
-		adj = [0, 2, 4]
-	elif nid == 2:
-		adj = [0, 1, 3, 4, 5, 6]
-	elif nid == 3:
 		adj = [0, 2, 6]
+		capacity = 2
+	elif nid == 2:
+		adj = [1, 3, 4]
+		capacity = 3
+	elif nid == 3:
+		adj = [2, 4, 5]
+		capacity = 2
 	elif nid == 4:
-		adj = [1, 2, 5, 7]
+		adj = [2, 3, 5, 6]
+		capacity = 1
 	elif nid == 5:
-		adj = [2, 4, 6, 7, 8, 9]
+		adj = [3, 4, 8]
+		capacity = 4
 	elif nid == 6:
-		adj = [2, 3, 5, 9]
+		adj = [1, 4, 7, 9]
+		capacity = 2
 	elif nid == 7:
-		adj = [4, 5, 8]
+		adj = [6, 8]
+		capacity = 8
 	elif nid == 8:
-		adj = [5, 7, 9]
+		adj = [5, 7]
+		capacity = 5
 	elif nid == 9:
-		adj = [5, 6, 8]
+		adj = [0, 6]
+		capacity = 4
 	else:
 		print("Invalid node number")
 		return
