@@ -11,7 +11,7 @@ import pickle
 
 MCAST_GRP = '127.0.0.1'
 MCAST_PORT = 2048
-SOURCE_NID = 0 
+SOURCE_NID = -1
 
 class Node:
 	def __init__(self, nid, adj, capacity):
@@ -24,12 +24,12 @@ class Node:
 
 class Message:
 
-	def __init__(self, source, dest, mType, maxCapacity):
+	def __init__(self, source, dest, mType, maxCapacity, root):
 		self.source = source
 		self.dest = dest
 		self.type = mType
 		self.capLeader = maxCapacity
-
+		self.root = root
 
 class Receiver(threading.Thread):
 
@@ -40,7 +40,7 @@ class Receiver(threading.Thread):
 		
 		
 	def run(self):
-		
+		global SOURCE_NID
 		while(True):
 			try: 
 				data, addr = self.sock.recvfrom(1024)
@@ -49,17 +49,32 @@ class Receiver(threading.Thread):
 				print("Waiting for new message...")
 			else:
 				if (message.type == 'ELECTION'):
-					if self.node.nid != SOURCE_NID and self.node.pred == None:
+					if self.node.pred == None and self.node.nid != SOURCE_NID:
 						self.node.pred = message.source
+						SOURCE_NID = message.root
 						print("My parent is node " + str(self.node.pred))
 						for i in self.node.adj:
 							if i != self.node.pred:
-								message = Message(self.node.nid, i, 'ELECTION', None)
+								message = Message(self.node.nid, i, 'ELECTION', None, SOURCE_NID)
 								sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + i))
 					else:
-						print("Receive a message from node " + str(message.source) + " but I already have a parent! Sendind ACK!")
-						message = Message(self.node.nid, message.source, 'ACK', None)
-						sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + message.source))
+						if SOURCE_NID == message.root:
+							print("Receive a message from node " + str(message.source) + " but I already have a parent! Sending ACK!")
+							message = Message(self.node.nid, message.source, 'ACK', None, SOURCE_NID)
+							sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + message.dest))
+						else:
+							print("More than one election occurring")
+							if message.root > SOURCE_NID:
+								SOURCE_NID = message.root
+								print("Nid of the source is bigger, I will participate in the election " + str(SOURCE_NID))
+								self.node.pred = message.source
+								print("Now my parent is node " + str(self.node.pred))
+								self.node.ack = 0
+								self.node.maxCapacity = [self.node.capacity, self.node.nid]
+								for i in self.node.adj:
+									if i != self.node.pred:
+										message = Message(self.node.nid, i, 'ELECTION', None, SOURCE_NID)
+										sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + i))
 				elif (message.type == 'ACK'):
 					print("Receive ACK from node " + str(message.source))
 					if (message.capLeader != None and message.capLeader[0] > self.node.maxCapacity[0]):
@@ -79,10 +94,11 @@ class Sender(threading.Thread):
 
 	def run(self):
 		if (self.node.nid == SOURCE_NID):
-			input("Press Enter to continue...")
+			time.sleep(random.randint(3, 5))
+			#input("Press Enter to continue...")
 			print("Starting election...")
 			for i in self.node.adj:
-				message = Message(self.node.nid, i, 'ELECTION', None)
+				message = Message(self.node.nid, i, 'ELECTION', None, SOURCE_NID)
 				sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + i))
 
 		endElection = False
@@ -91,17 +107,17 @@ class Sender(threading.Thread):
 				if (self.node.ack == len(self.node.adj)):
 					print("Sending broadcast message...")
 					for i in range(10):
-						message = Message(self.node.nid, message.source, 'BROADCAST', self.node.maxCapacity)
+						message = Message(self.node.nid, message.source, 'BROADCAST', self.node.maxCapacity, SOURCE_NID)
 						sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + i))
 					endElection = True
 			elif (self.node.pred != None and self.node.ack == len(self.node.adj) - 1):
 				print("Sending ACK to my parent, the max capacity I found is " + str(self.node.maxCapacity[0]))
-				message = Message(self.node.nid, self.node.pred, 'ACK', self.node.maxCapacity)
+				message = Message(self.node.nid, self.node.pred, 'ACK', self.node.maxCapacity, SOURCE_NID)
 				sent = self.sock.sendto(pickle.dumps(message), (MCAST_GRP, MCAST_PORT + self.node.pred))
 				self.node.ack = 0
 
 def main():
-
+	global SOURCE_NID
 	nid = int(sys.argv[1])
 	#capacity = int(sys.argv[2])
 
@@ -141,6 +157,7 @@ def main():
 	if nid == 0:
 		adj = [1, 9]
 		capacity = 4
+		SOURCE_NID = 0
 	elif nid == 1:
 		adj = [0, 2, 6]
 		capacity = 2
@@ -152,10 +169,11 @@ def main():
 		capacity = 2
 	elif nid == 4:
 		adj = [2, 3, 5, 6]
-		capacity = 1
+		capacity = 10
 	elif nid == 5:
 		adj = [3, 4, 8]
 		capacity = 4
+		SOURCE_NID = 5
 	elif nid == 6:
 		adj = [1, 4, 7, 9]
 		capacity = 2
