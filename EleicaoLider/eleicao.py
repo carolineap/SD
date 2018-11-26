@@ -11,7 +11,7 @@ import pickle
 
 MCAST_GRP = '127.0.0.1'
 MCAST_PORT = 2048
-SOURCE_NID = 1 
+SOURCE_NID = 0 
 
 class Node:
 	def __init__(self, nid, adj, capacity):
@@ -186,6 +186,7 @@ def main():
 	# 	print("Invalid node number")
 	# 	return
 
+	print("I am node " + str(nid))
 	print(adj)
 	print(capacity)
 
