@@ -94,7 +94,7 @@ class Sender(threading.Thread):
 
 	def run(self):
 		if (self.node.nid == SOURCE_NID):
-			time.sleep(random.randint(3, 5))
+			time.sleep(random.randint(5, 7))
 			#input("Press Enter to continue...")
 			print("Starting election...")
 			for i in self.node.adj:
@@ -129,66 +129,78 @@ def main():
 	adj = []
 
 	#Topologia inventada
-	# if nid == 0:
-	# 	adj = [1, 2, 3]
-	# elif nid == 1:
-	# 	adj = [0, 2, 4]
-	# elif nid == 2:
-	# 	adj = [0, 1, 3, 4, 5, 6]
-	# elif nid == 3:
-	# 	adj = [0, 2, 6]
-	# elif nid == 4:
-	# 	adj = [1, 2, 5, 7]
-	# elif nid == 5:
-	# 	adj = [2, 4, 6, 7, 8, 9]
-	# elif nid == 6:
-	# 	adj = [2, 3, 5, 9]
-	# elif nid == 7:
-	# 	adj = [4, 5, 8]
-	# elif nid == 8:
-	# 	adj = [5, 7, 9]
-	# elif nid == 9:
-	# 	adj = [5, 6, 8]
-	# else:
-	# 	print("Invalid node number")
-	# 	return
-
-	#Topologia do slide:
 	if nid == 0:
-		adj = [1, 9]
-		capacity = 4
+		adj = [1, 2, 3]
+		capacity = 10
 		SOURCE_NID = 0
 	elif nid == 1:
-		adj = [0, 2, 6]
-		capacity = 2
+		adj = [0, 2, 4]
+		capacity = 1
 	elif nid == 2:
-		adj = [1, 3, 4]
-		capacity = 3
-	elif nid == 3:
-		adj = [2, 4, 5]
-		capacity = 2
-	elif nid == 4:
-		adj = [2, 3, 5, 6]
+		adj = [0, 1, 3, 4, 5, 6]
 		capacity = 10
-	elif nid == 5:
-		adj = [3, 4, 8]
-		capacity = 4
-		SOURCE_NID = 5
-	elif nid == 6:
-		adj = [1, 4, 7, 9]
-		capacity = 2
-	elif nid == 7:
-		adj = [6, 8]
-		capacity = 8
-	elif nid == 8:
-		adj = [5, 7]
+	elif nid == 3:
+		adj = [0, 2, 6]
+		capacity = 9
+	elif nid == 4:
+		adj = [1, 2, 5, 7]
 		capacity = 5
+	elif nid == 5:
+		adj = [2, 4, 6, 7, 8, 9]
+		capacity = 18
+	elif nid == 6:
+		adj = [2, 3, 5, 9]
+		capacity = 7
+	elif nid == 7:
+		adj = [4, 5, 8]
+		capacity = 1
+	elif nid == 8:
+		adj = [5, 7, 9]
+		capacity = 2
+		SOURCE_NID = 8
 	elif nid == 9:
-		adj = [0, 6]
+		adj = [5, 6, 8]
 		capacity = 4
 	else:
 		print("Invalid node number")
 		return
+
+	#Topologia do slide:
+	# if nid == 0:
+	# 	adj = [1, 9]
+	# 	capacity = 4
+	# 	SOURCE_NID = 0
+	# elif nid == 1:
+	# 	adj = [0, 2, 6]
+	# 	capacity = 2
+	# elif nid == 2:
+	# 	adj = [1, 3, 4]
+	# 	capacity = 3
+	# elif nid == 3:
+	# 	adj = [2, 4, 5]
+	# 	capacity = 2
+	# elif nid == 4:
+	# 	adj = [2, 3, 5, 6]
+	# 	capacity = 10
+	# elif nid == 5:
+	# 	adj = [3, 4, 8]
+	# 	capacity = 4
+	# 	SOURCE_NID = 5
+	# elif nid == 6:
+	# 	adj = [1, 4, 7, 9]
+	# 	capacity = 2
+	# elif nid == 7:
+	# 	adj = [6, 8]
+	# 	capacity = 8
+	# elif nid == 8:
+	# 	adj = [5, 7]
+	# 	capacity = 5
+	# elif nid == 9:
+	# 	adj = [0, 6]
+	# 	capacity = 4
+	# else:
+	# 	print("Invalid node number")
+	# 	return
 
 	# if nid == 0:
 	# 	adj = [1, 2, 3]
