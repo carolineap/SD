@@ -4,8 +4,13 @@ import requests
 
 URL_CB = 'http://localhost:5000/'
 
+using_vm = []
+
+
+
 def main():
 
+    global using_vm
 
     while True:
         print("Menu de opções:\n0 - Sair do programa\n1 - Busca por recursos\n2 - Liberar recurso")
@@ -36,9 +41,14 @@ def main():
             # #utilizar o recurso
 
         elif opcao == 2:
-            #verificar se está usando algum recurso
-                break;
-            #request para json para parar de usar o recurso
+            
+            vm_id = input("Insira o id da vm que deseja liberar:\n")
+
+            if vm_id not in using_vm:
+                print("Esse recurso não está sendo utilizado")
+            else:
+                r = requests.get(URL_CB + 'clientFree', data=json.dumps({'vm_id': vm_id}))
+                using_vm.pop(vm_id)
 
         else:
             print("Opção inválida!")            

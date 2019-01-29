@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
+Flask = "*"
 certifi = "==2018.11.29"
 chardet = "==3.0.4"
 idna = "==2.8"
