@@ -1,15 +1,60 @@
-import os
 from flask import Flask, jsonify, request
-
+from flask_pymongo import PyMongo
+import json
+from pymongo import MongoClient
 
 app = Flask(__name__)
 
-@app.route('/')
-def nao_entre_em_panico():
-    if request.headers.get('Authorization') == '42':
-        return jsonify({"42": "a resposta para a vida, o universo e tudo mais"})
-    return jsonify({"message": "Não entre em pânico!"})
+#app.config["MONGO_URI"] = "mongodb://localhost:27017/cloudbroker_db"
+
+client = MongoClient('localhost', 27017)#host uri
+banco = client['test-database']
+VMS = banco['test-collection'] #Select the collection name
+
+
+class VirtualMachine:
+
+	def __init__(self, vm_id, hd, ram, cpu, preco):
+		self.id = vm_id
+		self.hd = hd
+		self.ram = ram
+		self.cpu = cpu
+		self.preco = preco
+
+@app.route('/add', methods=["GET", "POST"])
+def addVM():
+   	
+	if (request.method == 'GET'):
+		#try:
+			
+		content = request.get_json(force=True)
+		x = banco.VMS.insert_one(content)
+		#print(x)
+
+		#except:
+		#	pass
+
+	return 'OK'
+
+
+
+@app.route('/client', methods=["GET", "POST"])	
+def findMatch():
+	
+	if (request.method == 'GET'):
+
+	#	try:
+			
+		mydoc = banco.VMS.find()
+		
+
+
+
+
+	return 'OK'
+
+
+
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='localhost', port=5000)
