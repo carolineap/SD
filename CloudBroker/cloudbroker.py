@@ -26,7 +26,7 @@ def addVM():
    	
 	if (request.method == 'GET'):
 		#try:
-			
+			 
 		content = request.get_json(force=True)
 		x = banco.VMS.insert_one(content)
 		#print(x)
