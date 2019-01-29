@@ -12,9 +12,9 @@ import pickle
 MCAST_GRP = '127.0.0.1'
 MCAST_PORT = 2048
 message_list = []
-#rlist = random.sample(range(6),5)
+
 rlist = [6, 5, 4]
-rlist.extend(random.sample(range(3),3))
+rlist.extend(random.sample(range(4),3))
 isUsing = []
 myResources = []
 random.seed()
@@ -37,15 +37,14 @@ class Receiver(threading.Thread):
 		ack_buffer = []
 		while(True):
 			try: 
-				#time.sleep(random.randint(0, 3))
 				data, addr = self.sock.recvfrom(1024)
 				message = pickle.loads(data)
 				myTime = max(myTime, message.time) + 1
-				
 			except:
 				print("Waiting for new message...")
 			else:
-				
+				myTime += 1 #incrementa o tempo pois envia sempre resposta
+
 				if (message.isAck == False and message.isNak == False): #se não é ACK nem NAK
 					
 					print("Received message %s" % message.mid)
@@ -65,7 +64,7 @@ class Receiver(threading.Thread):
 									if int(str(message.time) + message.mid[0]) > int(str(i.time) + i.mid[0]):									
 										response = Message(message.mid, myTime, None, False, True)	
 										print("My time is smaller, sending NAK to message {}/R{}".format(message.mid,message.rid))
-									else :
+									else:
 										response = Message(message.mid, myTime, None, True, False)
 										print("My time is bigger, sending ACK to message {}/R{}".format(message.mid, message.rid))
 										message_list.pop(message_list.index(message))
@@ -75,7 +74,7 @@ class Receiver(threading.Thread):
 								print("Sending ACK to message {}/R{}".format(message.mid, message.rid))
 								message_list.pop(message_list.index(message))
 
-						else :	# se eu estou usando
+						else:	# se eu estou usando
 							response = Message(message.mid, myTime, None, False, True)
 							print("I am using, sending NAK {}/R{}".format(message.mid, message.rid))
 						
@@ -89,10 +88,10 @@ class Receiver(threading.Thread):
 						
 
 					self.sock.sendto(pickle.dumps(response), (MCAST_GRP, MCAST_PORT + int(message.mid[0])))	
-					myTime += 1
+					
 
 				elif message.isAck == True and message.isNak == False: #Se é ACK		
-					#print("Received ACK from message {}" .format(message.mid))
+					
 					flag = False
 
 					for x in range(len(myResources)):
@@ -141,6 +140,7 @@ class CriticalRegion(threading.Thread):
 	def run(self):
 		global isUsing
 		global message_list
+		global myTime
 		while True:
 			while len(isUsing):
 				print("I am using R%d" % isUsing[0])
@@ -149,6 +149,7 @@ class CriticalRegion(threading.Thread):
 				print("Stop using R%d" % r)
 				for m in message_list:
 					if (m.rid == r):
+						myTime += 1
 						ack = Message(m.mid, myTime, None, True, False)
 						print("Sending ACK to message {}/R{}".format(m.mid, m.rid))
 						self.sock.sendto(pickle.dumps(ack), (MCAST_GRP, MCAST_PORT + int(m.mid[0])))
