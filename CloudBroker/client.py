@@ -18,7 +18,7 @@ def main():
 
 	global using_vm
 	
-	print("Menu de opções:\n0 - Imprimir recursos utilizados\n1 - Busca por recursos\n2 - Liberar recurso")
+	print("Menu de opções:\n0 - Imprimir recursos sendo utilizados\n1 - Busca por recursos\n2 - Liberar recurso")
 	print("Insira uma das opções: ")
 
 	while True:
