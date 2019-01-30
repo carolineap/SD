@@ -6,8 +6,8 @@ import json
 import requests
 
 provider_id = 0
-#URL_CB = 'https://sd-cloud-broker.herokuapp.com/'
-URL_CB = 'http://localhost:5000/'
+URL_CB = 'https://sd-cloud-broker.herokuapp.com/'
+#URL_CB = 'http://localhost:5000/'
 vms = None
 
 class Resource:

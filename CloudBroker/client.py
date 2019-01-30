@@ -2,8 +2,8 @@ import sys
 import json
 import requests
 
-#URL_CB = 'https://sd-cloud-broker.herokuapp.com'
-URL_CB = 'http://localhost:5000'
+URL_CB = 'https://sd-cloud-broker.herokuapp.com'
+#URL_CB = 'http://localhost:5000'
 
 using_vm = []
 
