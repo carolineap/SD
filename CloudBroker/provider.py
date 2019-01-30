@@ -6,8 +6,8 @@ import json
 import requests
 
 provider_id = 0
-URL_CB = 'https://sd-cloud-broker.herokuapp.com/'
-#URL_CB = 'http://localhost:5000/'
+#URL_CB = 'https://sd-cloud-broker.herokuapp.com/'
+URL_CB = 'http://localhost:5000/'
 vms = None
 
 class Resource:
@@ -31,17 +31,20 @@ class myHandler(BaseHTTPRequestHandler):
 
 		if (post_data['type'] == 'request'):
 
-			result = vms.find_one({"vm_id": post_data['vm_id'], "provider_id": post_data["provider_id"]})
+			for v in post_data['vm_list']:
+
+				result = vms.find_one({"vm_id": v, "provider_id": post_data["provider_id"]})
 			
-			if result['isFree'] == 1:
-				vm = Resource(0, provider_id, result['vm_id'], result['hd'], result['ram'], result['cpu'], result['preco'])
-				r = requests.post(URL_CB + 'providerUpdate', data=json.dumps(vm, default=lambda o: o.__dict__))
-				print(r.text)
-				vms.update_one({"vm_id": result['vm_id'], "provider_id": result['provider_id']}, {"$set": {"isFree":0}})
-				self.send_response(200)
-			else:
-				self.send_response(204)					
+				if result['isFree'] == 1:
+					vm = Resource(0, provider_id, result['vm_id'], result['hd'], result['ram'], result['cpu'], result['preco'])
+					r = requests.post(URL_CB + 'providerUpdate', data=json.dumps(vm, default=lambda o: o.__dict__))
+					print(r.text)
+					vms.update_one({"vm_id": result['vm_id'], "provider_id": result['provider_id']}, {"$set": {"isFree":0}})
+				else:
+					self.send_response(204)					
 				
+			self.send_response(200)
+			
 		elif (post_data['type'] == 'free'):
 
 			result = vms.find_one({"vm_id": post_data['vm_id'], "provider_id": post_data["provider_id"]})

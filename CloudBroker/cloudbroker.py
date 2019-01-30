@@ -3,7 +3,7 @@ import json
 from pymongo import MongoClient
 import os
 
-RESOURCES = []
+providers = [ [], [], [], []]
 
 app = Flask(__name__)
 
@@ -16,7 +16,7 @@ class VirtualMachine:
 		self.hd = hd
 		self.ram = ram
 		self.cpu = cpu
-		self.preco = float(preco)
+		self.preco = preco
 
 @app.route('/')
 def cloudBroker():
@@ -28,9 +28,10 @@ def providerAdd():
 	if (request.method == 'POST'):
 		try:
 			content = request.get_json(force=True)
+			pid = content['provider_id'] - 1
 			newVM = VirtualMachine(content['isFree'], content['provider_id'], content['vm_id'], content['hd'], content['ram'], content['cpu'], content['preco'])
-			RESOURCES.append(newVM)
-			RESOURCES.sort(key=lambda newVM: newVM.preco)
+			providers[pid].append(newVM)
+			providers[pid].sort(key=lambda updateVM: newVM.preco)
 		except:
 			return 'Fail'
 
@@ -41,39 +42,60 @@ def providerUpdate():
 	
 	if (request.method == 'POST'):
 		try:
-			flag = False
 			content = request.get_json(force=True)
-			for r in RESOURCES:
-				if r.provider_id == content['provider_id'] and r.vm_id == content['vm_id']:
-					RESOURCES.pop(RESOURCES.index(r))
-					flag = True
-			if (flag == False):
-				return 'This machine does not exist in cloud broker'
+			pid = content['provider_id'] - 1
+			for r in providers[pid]:
+				if r.vm_id == content['vm_id']:
+					providers[pid].pop(providers[pid].index(r))
 			updateVM = VirtualMachine(content['isFree'], content['provider_id'], content['vm_id'], content['hd'], content['ram'], content['cpu'], content['preco'])
-			RESOURCES.append(updateVM)
-			RESOURCES.sort(key=lambda updateVM: updateVM.preco)
+			providers[pid].append(updateVM)		
+			providers[pid].sort(key=lambda updateVM: updateVM.preco)	
 		except:
 			return 'Fail'
 
-	return 'Success'
+	return 'Sucess'
 
 @app.route('/clientRequest', methods=["POST"])	
 def clientRequest():
 	
 	if (request.method == 'POST'):
-		try:
-			content = request.get_json(force=True)
-			hd = content['hd']
-			ram = content['ram']
-			cpu = content['cpu']
 
-			for vm in RESOURCES:
-				if vm.hd >= hd and vm.ram >= ram and vm.cpu and vm.isFree == 1:
-					return json.dumps({'provider_id': vm.provider_id, 'vm_id': vm.vm_id})
-		except:
-			return 'Fail'
+		content = request.get_json(force=True)
 
-	return 'Successs'
+		minPrice = -1
+		provider_id = -1
+		vm_list = []
+
+
+		for provider in providers: #para cada provedor
+
+			total = 0
+			i = 0
+			aux = []
+
+			for resource in content: #para cada recurso desejado
+
+				cpu = resource['cpu']
+				ram = resource['ram']
+				hd = resource['hd']
+
+				for vm in provider: #vejo preço pra aquele provedor
+
+					if vm.cpu >= cpu and vm.ram >= ram  and vm.hd >= hd and vm.isFree == 1 and vm.vm_id not in aux:
+						total += vm.preco
+						aux.append(vm.vm_id)
+						break;
+
+			if total > 0 and (minPrice == -1 or minPrice > total):
+				minPrice = total
+				provider_id = providers.index(provider)+1
+				vm_list = aux
+
+		if minPrice > -1:
+			return json.dumps({'provider_id': provider_id, 'vm_list': vm_list, 'preco_total': minPrice})
+
+
+	return 'Falha'
 
 
 if __name__ == "__main__":

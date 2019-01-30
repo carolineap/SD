@@ -2,8 +2,8 @@ import sys
 import json
 import requests
 
-URL_CB = 'https://sd-cloud-broker.herokuapp.com'
-#URL_CB = 'http://localhost:5000'
+#URL_CB = 'https://sd-cloud-broker.herokuapp.com'
+URL_CB = 'http://localhost:5000'
 
 using_vm = []
 
@@ -34,28 +34,40 @@ def main():
 
 			print("Buscar por nova máquina virtual")     
 
-			cpu = int(input("Insira a quantidade de vCPUs desejada: "))
-			ram = int(input("Insira a quantidade de memória RAM desejada: "))
-			hd = int(input("Insira a quantidade de memória de disco (HD) desejada: "))
+			qtd = int(input("Insira a quantidade de recursos desejados: "))
 
-			resource = Resource(hd, ram, cpu)
+			resources = []
 
-			r = requests.post(URL_CB + '/clientRequest', data=json.dumps(resource, default=lambda o: o.__dict__))
+			while qtd:
+				# cpu = int(input("Insira a quantidade de vCPUs desejada: "))
+				# ram = int(input("Insira a quantidade de memória RAM desejada: "))
+				# hd = int(input("Insira a quantidade de memória de disco (HD) desejada: "))
+				cpu = ram = hd = 1
+				qtd -= 1
+				resources.append(Resource(hd, ram, cpu))
+
+			r = requests.post(URL_CB + '/clientRequest', data=json.dumps(resources, default=lambda o: o.__dict__))
 
 			if r.text != 'Falha':
+				
 				content = json.loads(r.text)
-				# print(content['provider_id'])
-				# print(content['vm_id'])			
+				
+				pid = content['provider_id']
 
-				r = requests.post("http://localhost:" + str(8000 + int(content['provider_id'])), data=json.dumps({'type': 'request', 'vm_id': int(content['vm_id']), 'provider_id': int(content['provider_id'])}))
+				resp = input("Encontrado provedor " + str(pid) + " que fornece os recursos com valor total de " + str(content['preco_total']) + ". Deseja utilizar [S/N]? ")
 
-				print(r.status_code)
+				if resp == 'S' or resp == 's':
+					
+					r = requests.post("http://localhost:" + str(8000 + int(pid)), data=json.dumps({'type': 'request', 'vm_list': content['vm_list'], 'provider_id': int(pid)}))
 
-				if r.status_code == 200:
-					print("Using VM" + str(content['vm_id']) + " of provider " + str(content['provider_id']))
-					using_vm.append(str(content['vm_id']) + "/" + str(content['provider_id']))
-				else:
-					print("Error on request")
+					print(r.status_code)
+
+					if r.status_code == 200:
+						print("Using resources from provider " + str(content['provider_id']))
+						for vm in content['vm_list']:
+							using_vm.append(str(vm) + "/" + str(content['provider_id']))
+					else:
+						print("Error on request")
 			else:
 				print("Não há recurso que satisfaça esses requisitos!\n")
 				
