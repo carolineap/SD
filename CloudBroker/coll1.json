@@ -1,13 +1,13 @@
 [    
     { "isFree": 1, "provider_id": 1, "vm_id": 0 , "cpu": 2, "ram": 2 , "hd": 8 , "preco": 1.1},
-    { "isFree": 1, "provider_id": 1, "vm_id": 1 , "cpu": 2, "ram": 3 , "hd": 8 , "preco": 3.9},
+    { "isFree": 1, "provider_id": 1, "vm_id": 1 , "cpu": 2, "ram": 2 , "hd": 8 , "preco": 3.9},
     { "isFree": 1, "provider_id": 1, "vm_id": 2 , "cpu": 3, "ram": 2 , "hd": 16 , "preco": 4.2},
     { "isFree": 1, "provider_id": 1, "vm_id": 3 , "cpu": 4, "ram": 2 , "hd": 32 , "preco": 5.9},
-    { "isFree": 1, "provider_id": 1, "vm_id": 4 , "cpu": 5, "ram": 3 , "hd": 16 , "preco": 6.1},
-    { "isFree": 1, "provider_id": 1, "vm_id": 5 , "cpu": 5, "ram": 7 , "hd": 64 , "preco": 8.9},
+    { "isFree": 1, "provider_id": 1, "vm_id": 4 , "cpu": 5, "ram": 4 , "hd": 16 , "preco": 6.1},
+    { "isFree": 1, "provider_id": 1, "vm_id": 5 , "cpu": 5, "ram": 4 , "hd": 64 , "preco": 8.9},
     { "isFree": 1, "provider_id": 1, "vm_id": 6 , "cpu": 6, "ram": 8 , "hd": 16 , "preco": 8.9},
-    { "isFree": 1, "provider_id": 1, "vm_id": 7 , "cpu": 7, "ram": 5 , "hd": 32 , "preco": 4.2},
-    { "isFree": 1, "provider_id": 1, "vm_id": 8 , "cpu": 8, "ram": 5 , "hd": 64 , "preco": 5.1},
-    { "isFree": 1, "provider_id": 1, "vm_id": 9 , "cpu": 8, "ram": 9 , "hd": 64 , "preco": 6.7},
-    { "isFree": 1, "provider_id": 1, "vm_id": 10 , "cpu": 9, "ram": 9 , "hd": 132 , "preco": 9.5}
+    { "isFree": 1, "provider_id": 1, "vm_id": 7 , "cpu": 7, "ram": 8 , "hd": 32 , "preco": 4.2},
+    { "isFree": 1, "provider_id": 1, "vm_id": 8 , "cpu": 8, "ram": 16 , "hd": 64 , "preco": 5.1},
+    { "isFree": 1, "provider_id": 1, "vm_id": 9 , "cpu": 8, "ram": 16 , "hd": 64 , "preco": 6.7},
+    { "isFree": 1, "provider_id": 1, "vm_id": 10 , "cpu": 9, "ram": 16 , "hd": 132 , "preco": 9.5}
 ]

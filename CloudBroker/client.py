@@ -58,7 +58,10 @@ def main():
 				resp = input("Encontrado provedor " + str(pid) + " que fornece os recursos com valor total de R$ " + str(content['preco_total']) + ". Deseja utilizar [S/N]? ")
 
 				if resp == 'S' or resp == 's':
-					
+				
+					print("Requisitando pelas máquinas:")
+					print(content['vm_list'])
+
 					r = requests.post("http://localhost:" + str(8000 + int(pid)), data=json.dumps({'type': 'request', 'vm_list': content['vm_list'], 'provider_id': int(pid)}))
 
 					print(r.status_code)

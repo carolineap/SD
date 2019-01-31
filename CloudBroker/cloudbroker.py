@@ -70,7 +70,6 @@ def clientRequest():
 		for provider in providers: #para cada provedor
 
 			total = 0
-			i = 0
 			aux = []
 
 			for resource in content: #para cada recurso desejado
@@ -80,13 +79,12 @@ def clientRequest():
 				hd = resource['hd']
 
 				for vm in provider: #vejo preço pra aquele provedor
-
 					if vm.cpu >= cpu and vm.ram >= ram  and vm.hd >= hd and vm.isFree == 1 and vm.vm_id not in aux:
 						total += vm.preco
 						aux.append(vm.vm_id)
-						break
+						break	
 
-			if total > 0 and (minPrice == -1 or minPrice > total):
+			if total > 0 and (minPrice == -1 or minPrice > total) and len(aux) == len(content):
 				minPrice = total
 				provider_id = providers.index(provider)+1
 				vm_list = aux
