@@ -39,22 +39,23 @@ def main():
 			resources = []
 
 			while qtd:
-				# cpu = int(input("Insira a quantidade de vCPUs desejada: "))
-				# ram = int(input("Insira a quantidade de memória RAM desejada: "))
-				# hd = int(input("Insira a quantidade de memória de disco (HD) desejada: "))
-				cpu = ram = hd = 1
+				
+				cpu = int(input("Insira a quantidade de vCPUs desejada: "))
+				ram = int(input("Insira a quantidade de memória RAM desejada: "))
+				hd = int(input("Insira a quantidade de memória de disco (HD) desejada: "))
+				
 				qtd -= 1
 				resources.append(Resource(hd, ram, cpu))
 
 			r = requests.post(URL_CB + '/clientRequest', data=json.dumps(resources, default=lambda o: o.__dict__))
 
-			if r.text != 'Falha':
+			if r.text != 'Fail':
 				
 				content = json.loads(r.text)
 				
 				pid = content['provider_id']
 
-				resp = input("Encontrado provedor " + str(pid) + " que fornece os recursos com valor total de " + str(content['preco_total']) + ". Deseja utilizar [S/N]? ")
+				resp = input("Encontrado provedor " + str(pid) + " que fornece os recursos com valor total de R$ " + str(content['preco_total']) + ". Deseja utilizar [S/N]? ")
 
 				if resp == 'S' or resp == 's':
 					
@@ -63,11 +64,11 @@ def main():
 					print(r.status_code)
 
 					if r.status_code == 200:
-						print("Using resources from provider " + str(content['provider_id']))
+						print("Utilizando recursos do provedor " + str(content['provider_id']))
 						for vm in content['vm_list']:
 							using_vm.append(str(vm) + "/" + str(content['provider_id']))
 					else:
-						print("Error on request")
+						print("Erro na requisição ao provedor!")
 			else:
 				print("Não há recurso que satisfaça esses requisitos!\n")
 				
@@ -82,10 +83,10 @@ def main():
 				r = requests.post("http://localhost:" + str(8000 + int(content['provider_id'])), data=json.dumps({'type': 'free', 'vm_id': int(vm_id.split('/')[0]), 'provider_id': int(vm_id.split('/')[1])}))
 				
 				if r.status_code == 200:
-					print("Resource free")
+					print("Recurso liberado!")
 					using_vm.pop(using_vm.index(vm_id))
 				else:
-					print("Error on free")
+					print("Erro na liberação do recurso!")
 		else:
 			print("Opção inválida!")            
 

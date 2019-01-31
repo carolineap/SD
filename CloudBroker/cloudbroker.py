@@ -53,7 +53,7 @@ def providerUpdate():
 		except:
 			return 'Fail'
 
-	return 'Sucess'
+	return 'Success'
 
 @app.route('/clientRequest', methods=["POST"])	
 def clientRequest():
@@ -84,7 +84,7 @@ def clientRequest():
 					if vm.cpu >= cpu and vm.ram >= ram  and vm.hd >= hd and vm.isFree == 1 and vm.vm_id not in aux:
 						total += vm.preco
 						aux.append(vm.vm_id)
-						break;
+						break
 
 			if total > 0 and (minPrice == -1 or minPrice > total):
 				minPrice = total
@@ -95,7 +95,7 @@ def clientRequest():
 			return json.dumps({'provider_id': provider_id, 'vm_list': vm_list, 'preco_total': minPrice})
 
 
-	return 'Falha'
+	return 'Fail'
 
 
 if __name__ == "__main__":
